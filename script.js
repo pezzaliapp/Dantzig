@@ -219,6 +219,30 @@
   document.getElementById('run1').addEventListener('click', runProblem1);
   document.getElementById('run2').addEventListener('click', runProblem2);
 
+  // Auto-ricalcolo: quando cambiano i campi, ricalcola dopo 250ms (debounce)
+  const debounce = (fn, ms=250) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } };
+  const auto1 = debounce(runProblem1, 250);
+  const auto2 = debounce(runProblem2, 250);
+  ['n1','alpha1','delta1','smin','smax','trials1'].forEach(id => {
+    document.getElementById(id).addEventListener('input', auto1);
+    document.getElementById(id).addEventListener('change', auto1);
+  });
+  ['n2','alpha2','mu0','mu1','sigma2','trials2'].forEach(id => {
+    document.getElementById(id).addEventListener('input', auto2);
+    document.getElementById(id).addEventListener('change', auto2);
+  });
+
+  // Tasto Invio attiva il pulsante più vicino
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      if(document.activeElement && document.activeElement.closest('section')?.querySelector('#run1')===document.activeElement.closest('section')?.querySelector('#run1')){
+        runProblem1();
+      } else if(document.activeElement && document.activeElement.closest('section')?.querySelector('#run2')===document.activeElement.closest('section')?.querySelector('#run2')){
+        runProblem2();
+      }
+    }
+  });
+
   // esecuzione iniziale per mostrare qualcosa subito
   runProblem1();
   runProblem2();
