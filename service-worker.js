@@ -1,5 +1,5 @@
 // Semplice service worker per cache statica offline
-const CACHE = 'dantzig-v4';
+const CACHE = 'dantzig-v5';
 const ASSETS = ['.', 'index.html', 'style.css', 'script.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

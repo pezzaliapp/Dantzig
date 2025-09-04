@@ -1,4 +1,39 @@
 // Dantzig Demo — nessuna dipendenza esterna. Solo Canvas + Monte Carlo.
+
+  // ---- Funzioni teoriche per Normale standard ----
+  function phi(z){ return Math.exp(-0.5*z*z)/Math.sqrt(2*Math.PI); }
+  function Phi(z){ // CDF (erf-based)
+    return 0.5*(1 + Math.erf(z/Math.SQRT2));
+  }
+  // Inversa CDF (quantile) — Acklam
+  function PhiInv(p){
+    // https://web.archive.org/web/20150910044734/http://home.online.no/~pjacklam/notes/invnorm/
+    if (p <= 0 || p >= 1) {
+      if (p === 0) return -Infinity;
+      if (p === 1) return  Infinity;
+      throw new Error("p out of (0,1): "+p);
+    }
+    const a1=-39.6968302866538,a2=220.946098424521,a3=-275.928510446969,
+          a4=138.357751867269,a5=-30.6647980661472,a6=2.50662827745924;
+    const b1=-54.4760987982241,b2=161.585836858041,b3=-155.698979859887,
+          b4=66.8013118877197,b5=-13.2806815528857;
+    const c1=-0.00778489400243029,c2=-0.322396458041136,c3=-2.40075827716184,
+          c4=-2.54973253934373,c5=4.37466414146497,c6=2.93816398269878;
+    const d1=0.00778469570904146,d2=0.32246712907004,d3=2.445134137143,d4=3.75440866190742;
+    const plow=0.02425, phigh=1-plow;
+    let q,r;
+    if(p<plow){
+      q=Math.sqrt(-2*Math.log(p));
+      return (((((c1*q+c2)*q+c3)*q+c4)*q+c5)*q+c6)/((((d1*q+d2)*q+d3)*q+d4)*q+1);
+    }
+    if(phigh<p){
+      q=Math.sqrt(-2*Math.log(1-p));
+      return -(((((c1*q+c2)*q+c3)*q+c4)*q+c5)*q+c6)/((((d1*q+d2)*q+d3)*q+d4)*q+1);
+    }
+    q=p-0.5; r=q*q;
+    return (((((a1*r+a2)*r+a3)*r+a4)*r+a5)*r+a6)*q / (((((b1*r+b2)*r+b3)*r+b4)*r+b5)*r+1);
+  }
+
 (() => {
   'use strict';
 
@@ -135,19 +170,69 @@
   }
 
   // ------- Problema 2: Neyman–Pearson (LRT vs bilaterale) -------
+  
   function runProblem2() {
     const n = parseInt(document.getElementById('n2').value,10);
     const alpha = parseFloat(document.getElementById('alpha2').value);
     const mu0 = parseFloat(document.getElementById('mu0').value);
     const mu1 = parseFloat(document.getElementById('mu1').value);
     const sigma = parseFloat(document.getElementById('sigma2').value);
-    const trials = parseInt(document.getElementById('trials2').value,10);
 
-    const means0 = [];
-    for (let k=0;k<trials;k++){
-      const x = Array.from({length:n}, _=> sampleNormal(mu0, sigma));
-      means0.push(mean(x));
-    }
+    // Teoria: mean ~ N(mu, s^2) con s = sigma/sqrt(n)
+    const s = sigma/Math.sqrt(n);
+    const zA = PhiInv(1 - alpha);       // una coda
+    const cA = mu0 + zA*s;              // soglia LRT: P0(mean>cA) = alpha
+    const zB = PhiInv(1 - alpha/2);     // due code (bilaterale)
+    const cB = zB*s;                    // |mean - mu0| > cB
+
+    // griglia di mu tra mu0 e mu1 (o mu1->mu0 se mu1<mu0)
+    const K = 200;
+    const mus = Array.from({length:K}, (_,i)=> mu0 + (mu1-mu0)*i/(K-1));
+
+    // curve di potenza teorica
+    const powerLRT = mus.map(m => 1 - Phi((cA - m)/s));
+    const powerB   = mus.map(m => (1 - Phi((mu0 + cB - m)/s)) + Phi((mu0 - cB - m)/s));
+
+    // disegno
+    const ctx = document.getElementById('chart2').getContext('2d');
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+    clearCanvas(ctx, w, h);
+
+    const xmin = Math.min(mus[0], mus[mus.length-1]);
+    const xmax = Math.max(mus[0], mus[mus.length-1]);
+    const ymin = 0, ymax = 1;
+    drawAxes(ctx, w, h, xmin, xmax, ymin, ymax, "Curve di potenza teoriche: LRT (ciano) vs bilaterale (blu)");
+
+    // linee
+    plotLine(ctx, w, h, xmin, xmax, ymin, ymax, mus, powerB);   // blu default first
+    // LRT in ciano (sovrascrive)
+    ctx.strokeStyle = "#66d9ef"; ctx.lineWidth=2;
+    (function(){
+      const toX = v => 48 + (w-64)*(v - xmin)/(xmax - xmin);
+      const toY = v => 16 + (h-64)*(1 - (v - ymin)/(ymax - ymin));
+      ctx.beginPath();
+      for (let i=0;i<mus.length;i++){
+        const x = toX(mus[i]); const y = toY(powerLRT[i]);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    })();
+
+    // Mostra soglie come riferimento verticale su mu0 e mu1
+    ctx.setLineDash([6,4]); ctx.strokeStyle="#ffcc66";
+    const toX = v => 48 + (w-64)*(v - xmin)/(xmax - xmin);
+    ctx.beginPath(); ctx.moveTo(toX(mu0),16); ctx.lineTo(toX(mu0),h-48); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(mu1),16); ctx.lineTo(toX(mu1),h-48); ctx.stroke();
+    ctx.setLineDash([]);
+
+    document.getElementById('res2').textContent =
+      `LRT: cA=${cA.toFixed(3)} | Bilaterale: cB=${cB.toFixed(3)} | s=${s.toFixed(4)}`;
+
+    // Prepara dati per animazione del marker
+    window.__p2_data = { mus, powerLRT, powerB, xmin, xmax, ymin, ymax };
+    window.__p2_frame = 0;
+  }
+
     means0.sort((a,b)=>a-b);
     const cA = quantile(means0, 1 - alpha);
     const abs0 = means0.map(x=>Math.abs(x-mu0)).sort((a,b)=>a-b);
@@ -305,101 +390,56 @@
   }
   function stopAnim1(){ anim1Running=false; if(raf1) cancelAnimationFrame(raf1); }
 
+  
+
   function animateProblem2() {
     if (anim2Running) return; anim2Running = true;
+    if (!window.__p2_data) runProblem2();
+
+    const { mus, powerLRT, powerB, xmin, xmax, ymin, ymax } = window.__p2_data;
     const ctx = document.getElementById('chart2').getContext('2d');
     const w = ctx.canvas.width, h = ctx.canvas.height;
-
-    const n = parseInt(document.getElementById('n2').value,10);
-    const alpha = parseFloat(document.getElementById('alpha2').value);
-    const mu0 = parseFloat(document.getElementById('mu0').value);
-    const mu1 = parseFloat(document.getElementById('mu1').value);
-    const sigma = parseFloat(document.getElementById('sigma2').value);
-    const trials = 20000; // calibrazione soglie stabile
-
-    // Prepara soglie
-    const means0 = [];
-    for (let k=0;k<trials;k++){
-      const x = Array.from({length:n}, _=> sampleNormal(mu0, sigma));
-      means0.push(mean(x));
-    }
-    means0.sort((a,b)=>a-b);
-    const cA = quantile(means0, 1 - alpha);
-    const abs0 = means0.map(x=>Math.abs(x-mu0)).sort((a,b)=>a-b);
-    const cB = quantile(abs0, 1 - alpha);
-
+    const steps = 300; // ~10s a 30fps
     let frame = 0;
-    const steps = 300; // ~10s a 30fps, più fluido
+
     (function loop(){
       if (!anim2Running) {raf2=null; return;}
       frame++;
-      const t = frame/steps;
-      // mu(t) varia tra mu0 e mu1
-      const mu = mu0 + (mu1 - mu0) * (0.5 - 0.5*Math.cos(Math.PI*2*t));
-      const samples = 12000; // per frame, più fluido
-      const means = [];
-      let countA=0, countB=0;
-      for (let k=0;k<samples;k++){
-        const x = Array.from({length:n}, _=> sampleNormal(mu, sigma));
-        const m = mean(x);
-        means.push(m);
-        if (m > cA) countA++;
-        if (Math.abs(m-mu0) > cB) countB++;
-      }
-      const powerA = countA/samples, powerB = countB/samples;
+      const t = (frame % steps) / (steps-1); // 0..1
+      const idx = Math.floor(t*(mus.length-1));
+      const mu = mus[idx];
+      const yL = powerLRT[idx];
+      const yB = powerB[idx];
 
-      // Disegna
+      // Ridisegna statico
       clearCanvas(ctx, w, h);
-      const all = means0.concat(means);
-      const xmin = Math.min(...all), xmax = Math.max(...all);
-      const bins = 40;
-      const hx0 = new Array(bins).fill(0), hx1 = new Array(bins).fill(0);
-      for (let v of means0){
-        const b = Math.min(bins-1, Math.floor((v-xmin)/(xmax-xmin+1e-9)*bins));
-        hx0[b]++;
-      }
-      for (let v of means){
-        const b = Math.min(bins-1, Math.floor((v-xmin)/(xmax-xmin+1e-9)*bins));
-        hx1[b]++;
-      }
-      const ymax = Math.max(...hx0, ...hx1) * 1.1;
-      drawAxes(ctx, w, h, xmin, xmax, 0, ymax, "H0 (blu) fisso — H(t) che oscilla tra μ0 e μ1");
+      drawAxes(ctx, w, h, xmin, xmax, ymin, ymax, "Curve di potenza teoriche: LRT (ciano) vs bilaterale (blu)");
 
-      function toX(v){return 48 + (w-64)*(v - xmin)/(xmax - xmin)}
-      function toY(v){return 16 + (h-64)*(1 - (v)/(ymax))}
-      const bw = (w-64)/bins;
-      // H0 (linea)
-      ctx.beginPath(); ctx.strokeStyle="#4686ff"; ctx.lineWidth=2;
-      for(let i=0;i<bins;i++){
-        const x = 48 + i*bw + bw/2;
-        const y = toY(hx0[i]);
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      }
-      ctx.stroke();
-      // H(t) (linea)
-      ctx.beginPath(); ctx.strokeStyle="#66d9ef"; ctx.lineWidth=2;
-      for(let i=0;i<bins;i++){
-        const x = 48 + i*bw + bw/2;
-        const y = toY(hx1[i]);
-        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      }
-      ctx.stroke();
-
-      // Soglie
-      ctx.strokeStyle="#ffcc66"; ctx.setLineDash([6,4]);
-      const xCA = toX(cA); ctx.beginPath(); ctx.moveTo(xCA,16); ctx.lineTo(xCA,h-48); ctx.stroke();
-      const xCB1 = toX(mu0 + cB); ctx.beginPath(); ctx.moveTo(xCB1,16); ctx.lineTo(xCB1,h-48); ctx.stroke();
-      const xCB2 = toX(mu0 - cB); ctx.beginPath(); ctx.moveTo(xCB2,16); ctx.lineTo(xCB2,h-48); ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.fillStyle = "#9aa0a6";
-      ctx.font = "12px ui-monospace,monospace";
-      ctx.fillText(`μ(t)=${mu.toFixed(2)}  LRT≈${powerA.toFixed(3)}  Bilat≈${powerB.toFixed(3)}`, 56, 32);
+      // curve
+      plotLine(ctx, w, h, xmin, xmax, ymin, ymax, mus, powerB); // blu
+      ctx.strokeStyle = "#66d9ef"; ctx.lineWidth=2;
+      (function(){
+        const toX = v => 48 + (w-64)*(v - xmin)/(xmax - xmin);
+        const toY = v => 16 + (h-64)*(1 - (v - ymin)/(ymax - ymin));
+        ctx.beginPath();
+        for (let i=0;i<mus.length;i++){
+          const x = toX(mus[i]); const y = toY(powerLRT[i]);
+          if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        // marker su entrambe le curve
+        ctx.fillStyle = "#66d9ef"; ctx.beginPath(); ctx.arc(toX(mu), toY(yL), 5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#4686ff"; ctx.beginPath(); ctx.arc(toX(mu), toY(yB), 5, 0, Math.PI*2); ctx.fill();
+        // testo
+        ctx.fillStyle = "#9aa0a6"; ctx.font = "12px ui-monospace,monospace";
+        ctx.fillText(`μ=${mu.toFixed(3)}  LRT=${yL.toFixed(3)}  Bilat=${yB.toFixed(3)}`, 56, 32);
+      })();
 
       raf2 = requestAnimationFrame(loop);
     })();
   }
   function stopAnim2(){ anim2Running=false; if(raf2) cancelAnimationFrame(raf2); }
+
 
   // Toggle animazione
   document.getElementById('anim1').addEventListener('click', () => {
