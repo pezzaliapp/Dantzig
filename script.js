@@ -258,7 +258,7 @@
     const delta = parseFloat(document.getElementById('delta1').value);
     const smin = parseFloat(document.getElementById('smin').value);
     const smax = parseFloat(document.getElementById('smax').value);
-    const trials = Math.max(4000, parseInt(document.getElementById('trials1').value,10) / 4 | 0);
+    const trials = Math.max(5000, (parseInt(document.getElementById('trials1').value,10) / 3 | 0));
 
     // Precalibra tcrit
     const t0 = [];
@@ -270,7 +270,7 @@
     t0.sort((a,b)=>a-b);
     const tcrit = quantile(t0, 1 - alpha);
 
-    const steps = 120; // ~4s a 30fps
+    const steps = 300; // ~10s a 30fps, più fluido // ~4s a 30fps
     let frame = 0;
     (function loop(){
       if (!anim1Running) {raf1=null; return;}
@@ -315,7 +315,7 @@
     const mu0 = parseFloat(document.getElementById('mu0').value);
     const mu1 = parseFloat(document.getElementById('mu1').value);
     const sigma = parseFloat(document.getElementById('sigma2').value);
-    const trials = 20000;
+    const trials = 20000; // calibrazione soglie stabile
 
     // Prepara soglie
     const means0 = [];
@@ -329,14 +329,14 @@
     const cB = quantile(abs0, 1 - alpha);
 
     let frame = 0;
-    const steps = 120;
+    const steps = 300; // ~10s a 30fps, più fluido
     (function loop(){
       if (!anim2Running) {raf2=null; return;}
       frame++;
       const t = frame/steps;
       // mu(t) varia tra mu0 e mu1
       const mu = mu0 + (mu1 - mu0) * (0.5 - 0.5*Math.cos(Math.PI*2*t));
-      const samples = 20000;
+      const samples = 12000; // per frame, più fluido
       const means = [];
       let countA=0, countB=0;
       for (let k=0;k<samples;k++){
