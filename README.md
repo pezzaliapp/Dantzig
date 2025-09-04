@@ -1,22 +1,17 @@
-# Dantzig — Demo interattiva (HTML/JS/CSS)
+# Dantzig — Demo interattiva (HTML/JS/CSS) — v6
 
-Una app didattica in **un’unica cartella** che illustra i due problemi resi celebri da George B. Dantzig:
-- **(1)** La potenza del test t (σ ignoto) **dipende da σ**: non esiste un test con potenza indipendente da σ.
-- **(2)** **Lemma di Neyman–Pearson**: il **Likelihood-Ratio Test** è il più potente (a parità di livello α) rispetto ad alternative fissate.
+App didattica in un’unica cartella (PWA) che illustra:
+- **(1)** Potenza del test t (σ ignoto) al variare di **σ** (curva pre‑calcolata + marker animato).
+- **(2)** **Lemma di Neyman–Pearson**: curve di potenza teoriche (LRT vs bilaterale) con marker animati (niente vibrazioni).
 
-## Come usare
-1. Metti l’intera cartella su GitHub in una repository chiamata **`Dantzig`**.
-2. Abilita **GitHub Pages** su `main` / `/root` (cartella principale).
-3. Apri l’URL di Pages e prova la demo. È installabile come PWA (manifest + service worker).
+## Uso rapido
+1. Crea su GitHub la repo **Dantzig** e carica tutti i file nella root.
+2. Attiva **GitHub Pages** su `main` / root.
+3. Apri l’URL di Pages. Se avevi versioni precedenti: **Ctrl/Cmd+Shift+R** per aggiornare il service worker.
 
-## Struttura
-- `index.html` – UI e spiegazioni.
-- `style.css` – Stili.
-- `script.js` – Simulazioni Monte Carlo e grafici Canvas (niente librerie esterne).
-- `manifest.json`, `service-worker.js`, `icon-192.png`, `icon-512.png` – PWA minimal.
+## File
+- `index.html`, `style.css`, `script.js`
+- `manifest.json`, `service-worker.js`, `icon-192.png`, `icon-512.png`
 
 ## Licenza
-MIT — uso libero anche per scopi didattici e divulgativi.
-
-—
-*Demo educativa ispirata alla storia di George B. Dantzig.*
+MIT

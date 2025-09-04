@@ -6,68 +6,29 @@
   <title>Dantzig — Demo interattiva</title>
   <link rel="icon" href="icon-192.png">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#111111">
-  <style>
-    /* Inline critical CSS per caricamento rapido (duplicato anche in style.css) */
-    :root{--bg:#0f0f12;--fg:#e7e7ec;--muted:#9aa0a6;--accent:#66d9ef;--card:#18181c}
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif;background:var(--bg);color:var(--fg)}
-    header{padding:18px 16px;border-bottom:1px solid #222;background:linear-gradient(0deg, #121219, #0f0f12)}
-    header h1{margin:0;font-size:20px;letter-spacing:.5px}
-    header p{margin:.35rem 0 0;color:var(--muted);font-size:14px}
-    main{max-width:980px;margin:0 auto;padding:16px}
-    .card{background:var(--card);border:1px solid #222;border-radius:12px;padding:16px;margin:16px 0}
-    .grid{display:grid;grid-template-columns:1fr;gap:12px}
-    @media(min-width:860px){.grid{grid-template-columns: 1.1fr .9fr}}
-    label{display:block;font-size:13px;color:var(--muted);margin:4px 0}
-    input,select,button{background:#111318;color:var(--fg);border:1px solid #2a2d35;border-radius:8px;padding:8px 10px}
-    input[type=number]{width:120px}
-    button{cursor:pointer}
-    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
-    canvas{width:100%;height:360px;background:#0d0f14;border-radius:10px;border:1px solid #222}
-    small.code{font-family:ui-monospace,SFMono-Regular,Consolas,Monaco,Menlo,monospace;color:#bdbdbd}
-    footer{color:var(--muted);font-size:13px;padding:24px 16px;text-align:center}
-    .kbd{padding:0 6px;border:1px solid #333;border-bottom-width:2px;border-radius:6px;background:#0b0d11;font-family:ui-monospace}
-    .pill{display:inline-block;padding:2px 8px;border:1px solid #2a2d35;border-radius:999px;color:#cfd8dc;background:#101218;font-size:12px}
-    a{color:var(--accent);text-decoration:none}
-    .mono{font-family:ui-monospace,SFMono-Regular,Consolas,Monaco,Menlo,monospace}
-  </style>
+  <meta name="theme-color" content="#0f0f12">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <h1>Dantzig — Due problemi “impossibili”</h1>
-    <p>Una piccola app interattiva per visualizzare i risultati dei due problemi risolti da George B. Dantzig (1939): <span class="pill">potenza vs σ</span> e <span class="pill">Neyman–Pearson</span>.</p>
+    <p class="muted">Demo HTML/JS/CSS (PWA) in un’unica cartella. Problema (1): potenza del test t vs σ. Problema (2): Lemma di Neyman–Pearson.</p>
   </header>
 
   <main>
     <section class="card grid">
       <div>
-        <h2 style="margin-top:0">Problema (1) — Potenza del test t vs σ</h2>
-        <p>Fissando lo scarto reale <span class="mono">Δ = μ₁ − μ₀</span>, la potenza del test t <em>dipende</em> da σ. Usa i controlli per simulare e tracciare <strong>potenza(σ)</strong>.</p>
+        <h2>Problema (1) — Potenza del test t vs σ</h2>
+        <p>Fissa <span class="mono">Δ = μ₁ − μ₀</span> e osserva come la potenza dipende da <span class="mono">σ</span>. Pre‑calcoliamo una curva stabile; l’animazione muove un marker lungo la linea (senza vibrazioni).</p>
         <div class="row">
-          <div>
-            <label>n (osservazioni)</label>
-            <input id="n1" type="number" value="20" min="5" max="100">
-          </div>
-          <div>
-            <label>α (livello)</label>
-            <input id="alpha1" type="number" value="0.05" step="0.01" min="0.001" max="0.2">
-          </div>
-          <div>
-            <label>Δ = μ₁ − μ₀</label>
-            <input id="delta1" type="number" value="1.0" step="0.1">
-          </div>
-          <div>
-            <label>σ min/max</label>
-            <input id="smin" type="number" value="0.5" step="0.1">
-            <input id="smax" type="number" value="3.0" step="0.1">
-          </div>
-          <div>
-            <label>Trial Monte Carlo</label>
-            <input id="trials1" type="number" value="20000" step="5000" min="2000">
-          </div>
-          <button id="run1">Simula & Disegna</button> <button id="anim1">Animazione</button> <button id="rec1">Registra WebM</button>
+          <div><label>n</label><input id="n1" type="number" value="20" min="5" max="100"></div>
+          <div><label>α</label><input id="alpha1" type="number" value="0.05" step="0.01" min="0.001" max="0.2"></div>
+          <div><label>Δ = μ₁ − μ₀</label><input id="delta1" type="number" value="1.0" step="0.1"></div>
+          <div><label>σ min/max</label><input id="smin" type="number" value="0.5" step="0.1"><input id="smax" type="number" value="3.0" step="0.1"></div>
+          <div><label>Trial Monte Carlo</label><input id="trials1" type="number" value="30000" step="5000" min="5000"></div>
+          <button id="run1">Simula & Disegna</button>
+          <button id="anim1">Animazione</button>
+          <button id="rec1">Registra WebM</button>
         </div>
       </div>
       <div>
@@ -78,65 +39,47 @@
 
     <section class="card grid">
       <div>
-        <h2 style="margin-top:0">Problema (2) — Lemma di Neyman–Pearson</h2>
-        <p>Confronto tra <strong>LRT</strong> (una coda) e un test bilaterale allo stesso livello α per <span class="mono">Xᵢ ~ 𝒩(μ, σ²)</span> con σ noto.</p>
+        <h2>Problema (2) — Lemma di Neyman–Pearson</h2>
+        <p>Curve di potenza teoriche per <span class="mono">Xᵢ ~ 𝒩(μ, σ²)</span> con σ noto: <strong>LRT</strong> (una coda) vs <strong>bilaterale</strong> (due code). L’animazione muove due marker lungo le curve.</p>
         <div class="row">
-          <div>
-            <label>n</label>
-            <input id="n2" type="number" value="10" min="5" max="200">
-          </div>
-          <div>
-            <label>α</label>
-            <input id="alpha2" type="number" value="0.05" step="0.01" min="0.001" max="0.2">
-          </div>
-          <div>
-            <label>μ₀</label>
-            <input id="mu0" type="number" value="0.0" step="0.1">
-          </div>
-          <div>
-            <label>μ₁</label>
-            <input id="mu1" type="number" value="0.5" step="0.1">
-          </div>
-          <div>
-            <label>σ (noto)</label>
-            <input id="sigma2" type="number" value="1.0" step="0.1">
-          </div>
-          <div>
-            <label>Trial Monte Carlo</label>
-            <input id="trials2" type="number" value="50000" step="5000" min="5000">
-          </div>
-          <button id="run2">Simula</button> <button id="anim2">Animazione</button> <button id="rec2">Registra WebM</button>
+          <div><label>n</label><input id="n2" type="number" value="10" min="5" max="300"></div>
+          <div><label>α</label><input id="alpha2" type="number" value="0.05" step="0.01" min="0.001" max="0.2"></div>
+          <div><label>μ₀</label><input id="mu0" type="number" value="0.0" step="0.1"></div>
+          <div><label>μ₁</label><input id="mu1" type="number" value="0.5" step="0.1"></div>
+          <div><label>σ (noto)</label><input id="sigma2" type="number" value="1.0" step="0.1"></div>
+          <button id="run2">Disegna</button>
+          <button id="anim2">Animazione</button>
+          <button id="rec2">Registra WebM</button>
         </div>
       </div>
       <div>
-        <canvas id="chart2" width="900" height="360" aria-label="Distribuzioni sotto H0/H1"></canvas>
+        <canvas id="chart2" width="900" height="360" aria-label="Curve di potenza teoriche"></canvas>
         <p><small class="code" id="res2"></small></p>
       </div>
     </section>
 
     <section class="card">
-      <h3>Come funziona</h3>
-      <ol>
-        <li><strong>Problema (1):</strong> si calibra il test t sotto H₀ e si misura la potenza sotto H₁ per una griglia di σ. La curva mostra che la potenza <em>varia</em> con σ.</li>
-        <li><strong>Problema (2):</strong> si tarano le soglie di livello α e si confrontano le potenze: il <span class="pill">LRT</span> è più potente del test bilaterale verso μ₁ &gt; μ₀.</li>
-      </ol>
-      <p>Questa è una <em>illustrazione computazionale</em> fedele allo spirito dei risultati di Dantzig; non è una dimostrazione formale.</p>
+      <h3>Note</h3>
+      <ul>
+        <li>Questa è un’illustrazione computazionale, non una dimostrazione formale.</li>
+        <li>Su iOS Safari la registrazione <span class="mono">MediaRecorder</span> potrebbe non essere disponibile.</li>
+      </ul>
     </section>
   </main>
 
-  <footer>
-    <span>&copy; 2025 • Demo educativa ispirata a George B. Dantzig • MIT License</span>
-  </footer>
+  <footer>&copy; 2025 • Demo educativa • MIT License</footer>
 
   <script src="script.js"></script>
-
   <script>
+    // Registra il service worker e forza l'aggiornamento
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js');
+      window.addEventListener('load', async () => {
+        try {
+          const reg = await navigator.serviceWorker.register('./service-worker.js');
+          if (reg.waiting) { reg.waiting.postMessage({type:'SKIP_WAITING'}); }
+        } catch(e){ console.warn('SW', e); }
       });
     }
   </script>
 </body>
-
 </html>

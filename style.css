@@ -1,2 +1,19 @@
 :root{--bg:#0f0f12;--fg:#e7e7ec;--muted:#9aa0a6;--accent:#66d9ef;--card:#18181c}
-/* CSS esterno (duplicato essenziale inline per performance) */
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial,sans-serif}
+header{padding:18px 16px;border-bottom:1px solid #222;background:linear-gradient(0deg,#121219,#0f0f12)}
+h1{margin:0;font-size:20px;letter-spacing:.4px}
+.muted{color:var(--muted);font-size:14px;margin:.4rem 0 0}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid #222;border-radius:12px;padding:16px;margin:16px 0}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:860px){.grid{grid-template-columns:1.1fr .9fr}}
+label{display:block;font-size:13px;color:var(--muted);margin:4px 0}
+input,button{background:#111318;color:var(--fg);border:1px solid #2a2d35;border-radius:8px;padding:8px 10px}
+input[type=number]{width:120px}
+button{cursor:pointer}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+canvas{width:100%;height:360px;background:#0d0f14;border-radius:10px;border:1px solid #222}
+small.code{font-family:ui-monospace,SFMono-Regular,Consolas,Monaco,Menlo,monospace;color:#bdbdbd}
+footer{color:var(--muted);font-size:13px;padding:24px 16px;text-align:center}
+.mono{font-family:ui-monospace,SFMono-Regular,Consolas,Monaco,Menlo,monospace}
