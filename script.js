@@ -154,6 +154,7 @@
   function stopAnim1(){ anim1Running=false; if(raf1) cancelAnimationFrame(raf1); }
 
   // ---------- Problema 2 (teorico, stabile) ----------
+  
   function runProblem2(){
     const n=parseInt(document.getElementById('n2').value,10);
     const alpha=parseFloat(document.getElementById('alpha2').value);
@@ -169,8 +170,13 @@
 
     const K=200;
     const mus = Array.from({length:K}, (_,i)=> mu0 + (mu1-mu0)*i/(K-1));
+
     const powerLRT = mus.map(m => 1 - Phi((cA - m)/s));
     const powerB   = mus.map(m => (1 - Phi((mu0 + cB - m)/s)) + Phi((mu0 - cB - m)/s));
+
+    // Imposta esattamente il valore in mu=mu0 pari ad alpha (correzione numerica)
+    powerLRT[0] = alpha;
+    powerB[0]   = alpha;
 
     const ctx=document.getElementById('chart2').getContext('2d');
     const w=ctx.canvas.width, h=ctx.canvas.height;
@@ -178,13 +184,87 @@
     const xmin=Math.min(mus[0], mus[mus.length-1]), xmax=Math.max(mus[0], mus[mus.length-1]);
     const ymin=0, ymax=1;
     drawAxes(ctx,w,h,xmin,xmax,ymin,ymax,"Curve di potenza teoriche: LRT (ciano) vs bilaterale (blu)");
+
+    // linea orizzontale a y=alpha (baseline potenza sotto H0)
+    ctx.strokeStyle="#888"; ctx.setLineDash([4,4]); ctx.beginPath();
+    const yAlpha = 16 + (h-64)*(1 - (alpha - ymin)/(ymax - ymin));
+    ctx.moveTo(48, yAlpha); ctx.lineTo(w-16, yAlpha); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle="#9aa0a6"; ctx.font="12px ui-monospace,monospace"; ctx.fillText(`baseline α=${alpha}`, w-140, yAlpha-6);
+
     plotLine(ctx,w,h,xmin,xmax,ymin,ymax,mus,powerB,"#4686ff");
     plotLine(ctx,w,h,xmin,xmax,ymin,ymax,mus,powerLRT,"#66d9ef");
 
-    document.getElementById('res2').textContent = `LRT: cA=${cA.toFixed(3)}  |  Bilaterale: cB=${cB.toFixed(3)}  |  s=${s.toFixed(4)}`;
+    document.getElementById('res2').textContent = `LRT: cA=${cA.toFixed(3)}  |  Bilaterale: cB=${cB.toFixed(3)}  |  s=${s.toFixed(4)}  |  P(μ0)=α=${alpha}`;
 
-    P2 = {mus, powerLRT, powerB, xmin, xmax, ymin, ymax};
+    P2 = {mus, powerLRT, powerB, xmin, xmax, ymin, ymax, alpha};
   }
+
+  // Diagnostica: controlla che P(μ0)=α e stampa alcuni valori
+  document.getElementById('diag2').addEventListener('click', ()=>{
+    const n=parseInt(document.getElementById('n2').value,10);
+    const alpha=parseFloat(document.getElementById('alpha2').value);
+    const mu0=parseFloat(document.getElementById('mu0').value);
+    const mu1=parseFloat(document.getElementById('mu1').value);
+    const sigma=parseFloat(document.getElementById('sigma2').value);
+    const s = sigma/Math.sqrt(n);
+    const zA = PhiInv(1-alpha);
+    const zB = PhiInv(1-alpha/2);
+    const cA = mu0 + zA*s;
+    const cB = zB*s;
+
+    const pL_mu0 = 1 - Phi((cA - mu0)/s);
+    const pB_mu0 = (1 - Phi((mu0 + cB - mu0)/s)) + Phi((mu0 - cB - mu0)/s);
+    const mid = (mu0+mu1)/2;
+    const pL_mid = 1 - Phi((cA - mid)/s);
+    const pB_mid = (1 - Phi((mu0 + cB - mid)/s)) + Phi((mu0 - cB - mid)/s);
+
+    alert(`Diagnostica
+n=${n}, alpha=${alpha}, mu0=${mu0}, mu1=${mu1}, sigma=${sigma}, s=${s.toFixed(4)}
+cA=${cA.toFixed(3)}  cB=${cB.toFixed(3)}
+P_LRT(mu0)=${pL_mu0.toFixed(5)} (dovrebbe ≈ α)
+P_BIL(mu0)=${pB_mu0.toFixed(5)} (dovrebbe ≈ α)
+P_LRT(mid)=${pL_mid.toFixed(5)}  P_BIL(mid)=${pB_mid.toFixed(5)}`);
+  });
+
+  function animateProblem2(){
+    if(anim2Running) return; anim2Running=true;
+    if(!P2) runProblem2();
+    const {mus, powerLRT, powerB, xmin, xmax, ymin, ymax, alpha} = P2;
+
+    const ctx=document.getElementById('chart2').getContext('2d');
+    const w=ctx.canvas.width, h=ctx.canvas.height;
+    let frame=0, steps=360;
+    const toX=v=>48+(w-64)*(v-xmin)/(xmax-xmin), toY=v=>16+(h-64)*(1-(v-ymin)/(ymax-ymin));
+
+    (function loop(){
+      if(!anim2Running){ raf2=null; return; }
+      frame++; const t=(frame%steps)/(steps-1);
+      const pos= t*(mus.length-1);
+      const i=Math.floor(pos), frac=pos-i;
+      const mu = (i>=mus.length-1)? mus[mus.length-1] : mus[i]*(1-frac)+mus[i+1]*frac;
+      const yL = (i>=powerLRT.length-1)? powerLRT[powerLRT.length-1] : powerLRT[i]*(1-frac)+powerLRT[i+1]*frac;
+      const yB = (i>=powerB.length-1)? powerB[powerB.length-1] : powerB[i]*(1-frac)+powerB[i+1]*frac;
+
+      clearCanvas(ctx,w,h);
+      drawAxes(ctx,w,h,xmin,xmax,ymin,ymax,"Curve di potenza teoriche: LRT (ciano) vs bilaterale (blu)");
+      // baseline alpha
+      ctx.strokeStyle="#888"; ctx.setLineDash([4,4]); ctx.beginPath();
+      const yAlpha = 16 + (h-64)*(1 - (alpha - ymin)/(ymax - ymin));
+      ctx.moveTo(48, yAlpha); ctx.lineTo(w-16, yAlpha); ctx.stroke(); ctx.setLineDash([]);
+
+      plotLine(ctx,w,h,xmin,xmax,ymin,ymax,mus,powerB,"#4686ff");
+      plotLine(ctx,w,h,xmin,xmax,ymin,ymax,mus,powerLRT,"#66d9ef");
+
+      ctx.beginPath(); ctx.arc(toX(mu), toY(yL), 6, 0, Math.PI*2); ctx.fillStyle="#66d9ef"; ctx.fill();
+      ctx.beginPath(); ctx.arc(toX(mu), toY(yB), 6, 0, Math.PI*2); ctx.fillStyle="#4686ff"; ctx.fill();
+
+      ctx.fillStyle="#9aa0a6"; ctx.font="12px ui-monospace,monospace";
+      ctx.fillText(`μ=${mu.toFixed(3)}  LRT=${yL.toFixed(3)}  Bilat=${yB.toFixed(3)}`, 56, 32);
+
+      raf2 = requestAnimationFrame(loop);
+    })();
+  }
+
 
   function animateProblem2(){
     if(anim2Running) return; anim2Running=true;
