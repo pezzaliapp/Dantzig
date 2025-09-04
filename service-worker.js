@@ -1,5 +1,5 @@
 // Service Worker v6 — cache-busting e aggiornamento immediato
-const CACHE = 'dantzig-v8';
+const CACHE = 'dantzig-v9';
 const ASSETS = ['.', 'index.html', 'style.css', 'script.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

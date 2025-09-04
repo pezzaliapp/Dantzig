@@ -155,6 +155,7 @@
 
   // ---------- Problema 2 (teorico, stabile) ----------
   
+  
   function runProblem2(){
     const n=parseInt(document.getElementById('n2').value,10);
     const alpha=parseFloat(document.getElementById('alpha2').value);
@@ -164,19 +165,26 @@
 
     const s = sigma/Math.sqrt(n);
     const zA = PhiInv(1-alpha);
-    const cA = mu0 + zA*s;
+    const cA = mu0 + zA*s;            // LRT: P0(mean>cA)=alpha
     const zB = PhiInv(1-alpha/2);
-    const cB = zB*s;
+    const cB = zB*s;                   // Bilaterale: |mean-mu0|>cB
 
+    // Griglia tra mu0 e mu1 per disegnare le curve
     const K=200;
     const mus = Array.from({length:K}, (_,i)=> mu0 + (mu1-mu0)*i/(K-1));
 
+    // Curve teoriche
     const powerLRT = mus.map(m => 1 - Phi((cA - m)/s));
     const powerB   = mus.map(m => (1 - Phi((mu0 + cB - m)/s)) + Phi((mu0 - cB - m)/s));
 
-    // Imposta esattamente il valore in mu=mu0 pari ad alpha (correzione numerica)
+    // Forza esattamente l'endpoint NP: P(mu0)=alpha
     powerLRT[0] = alpha;
     powerB[0]   = alpha;
+
+    // Valutazione al punto mu=mu1 (NP: semplice vs semplice)
+    const pL_mu1 = 1 - Phi((cA - mu1)/s);
+    const pB_mu1 = (1 - Phi((mu0 + cB - mu1)/s)) + Phi((mu0 - cB - mu1)/s);
+    const deltaP = pL_mu1 - pB_mu1;
 
     const ctx=document.getElementById('chart2').getContext('2d');
     const w=ctx.canvas.width, h=ctx.canvas.height;
@@ -185,19 +193,37 @@
     const ymin=0, ymax=1;
     drawAxes(ctx,w,h,xmin,xmax,ymin,ymax,"Curve di potenza teoriche: LRT (ciano) vs bilaterale (blu)");
 
-    // linea orizzontale a y=alpha (baseline potenza sotto H0)
+    // baseline y=alpha
     ctx.strokeStyle="#888"; ctx.setLineDash([4,4]); ctx.beginPath();
     const yAlpha = 16 + (h-64)*(1 - (alpha - ymin)/(ymax - ymin));
     ctx.moveTo(48, yAlpha); ctx.lineTo(w-16, yAlpha); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle="#9aa0a6"; ctx.font="12px ui-monospace,monospace"; ctx.fillText(`baseline α=${alpha}`, w-140, yAlpha-6);
 
+    // Curve
     plotLine(ctx,w,h,xmin,xmax,ymin,ymax,mus,powerB,"#4686ff");
     plotLine(ctx,w,h,xmin,xmax,ymin,ymax,mus,powerLRT,"#66d9ef");
 
-    document.getElementById('res2').textContent = `LRT: cA=${cA.toFixed(3)}  |  Bilaterale: cB=${cB.toFixed(3)}  |  s=${s.toFixed(4)}  |  P(μ0)=α=${alpha}`;
+    // Marker al punto NP: mu=mu1
+    const toX=v=>48+(w-64)*(v-xmin)/(xmax-xmin), toY=v=>16+(h-64)*(1-(v-ymin)/(ymax-ymin));
+    ctx.beginPath(); ctx.arc(toX(mu1), toY(pL_mu1), 6, 0, Math.PI*2); ctx.fillStyle="#66d9ef"; ctx.fill();
+    ctx.beginPath(); ctx.arc(toX(mu1), toY(pB_mu1), 6, 0, Math.PI*2); ctx.fillStyle="#4686ff"; ctx.fill();
 
-    P2 = {mus, powerLRT, powerB, xmin, xmax, ymin, ymax, alpha};
+    // Etichetta NP
+    ctx.fillStyle="#9aa0a6"; ctx.font="12px ui-monospace,monospace";
+    ctx.fillText(`μ=μ₁=${mu1.toFixed(3)}  →  Potenze:  LRT=${pL_mu1.toFixed(3)}  Bilat=${pB_mu1.toFixed(3)}  Δ=${deltaP.toFixed(3)}`, 56, 32);
+    if (deltaP >= -1e-12) {
+      ctx.fillStyle="#9fe59f";
+      ctx.fillText("✔ LRT è ≥ in potenza (Neyman–Pearson, semplice vs semplice)", 56, 48);
+    } else {
+      ctx.fillStyle="#ff9f9f";
+      ctx.fillText("⚠ Attenzione: la curva non rispetta NP — controlla i parametri", 56, 48);
+    }
+
+    document.getElementById('res2').textContent =
+      `LRT: cA=${cA.toFixed(3)}  |  Bilaterale: cB=${cB.toFixed(3)}  |  s=${s.toFixed(4)}  |  P(μ₀)=α=${alpha}  |  P_LRT(μ₁)=${pL_mu1.toFixed(3)}  P_Bilat(μ₁)=${pB_mu1.toFixed(3)}  Δ=${deltaP.toFixed(3)}`;
+
+    P2 = {mus, powerLRT, powerB, xmin, xmax, ymin, ymax, alpha, mu1, pL_mu1, pB_mu1};
   }
+
 
   // Diagnostica: controlla che P(μ0)=α e stampa alcuni valori
   document.getElementById('diag2').addEventListener('click', ()=>{
